@@ -219,13 +219,18 @@
             // Store in browser for debugging (you can view in console)
             console.log('Conversation Log:', logEntry);
             
-            //Send to logging endpoint
-            fetch('https://script.google.com/macros/s/AKfycbx0yly_Zrv1By5KBxrLWkpGjInGp3-CGeZcE5ypOIlrevmKSrrJ3SvhFsT54yNSjlzI/exec', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(logEntry)
-            }).catch(err => console.log('Logging failed:', err));
-        }
+// Send to Google Sheets
+const params = new URLSearchParams({
+    timestamp: logEntry.timestamp,
+    sessionId: logEntry.sessionId,
+    userMessage: logEntry.userMessage,
+    assistantResponse: logEntry.assistantResponse,
+    satisfactionResponse: logEntry.satisfactionResponse || ''
+});
+
+fetch('https://script.google.com/macros/s/AKfycbx0yly_Zrv1By5KBxrLWkpGjInGp3-CGeZcE5ypOIlrevmKSrrJ3SvhFsT54yNSjlzI/exec?' + params, {
+    method: 'GET'
+}).catch(err => console.log('Logging failed:', err));        }
         
         const SYSTEM_PROMPT = `You are a knowledgeable home winemaking support specialist for Water'n'Wine, a homebrewing supply store in Truro, Nova Scotia. Your role is to help customers troubleshoot problems and answer questions about making wine, beer, and other fermented beverages.
 
