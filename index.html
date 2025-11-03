@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winemaking Support</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
+        
+        .message.assistant .message-content {
+            background: white;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+        }
+        
+        .message.assistant .message-content a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px solid #667eea;
+        }
+        
+        .message.assistant .message-content a:hover {
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+        
+        .loading span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .loading span:nth-child(1) { animation-delay: -0.32s; }
+        .loading span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        .welcome-message {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .welcome-message h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-message p {
+            color: #555;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ðŸ· Winemaking Support</h1>
+            <p>Get help with your homebrewing questions</p>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h3>Welcome to Winemaking Support!</h3>
+                <p>I'm here to help troubleshoot issues and answer questions about making wine, beer, and other fermented beverages. Ask me anything!</p>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Ask your winemaking question..."
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                />
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const conversationHistory = [];
+        const sessionId = 'session_' + Date.now();
+        
+        // Log conversation for review
+        function logConversation(userMessage, assistantResponse, satisfactionResponse = null) {
+            const logEntry = {
+                sessionId: sessionId,
+                timestamp: new Date().toISOString(),
+                userMessage: userMessage,
+                assistantResponse: assistantResponse,
+                satisfactionResponse: satisfactionResponse
+            };
+            
+            // Store in browser for debugging (you can view in console)
+            console.log('Conversation Log:', logEntry);
+            
+            // Optional: Send to logging endpoint
+            // Uncomment and add your logging endpoint URL
+            /*
+            fetch('YOUR_LOGGING_ENDPOINT_URL', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logEntry)
+            }).catch(err => console.log('Logging failed:', err));
+            */
+        }
+        
+        const SYSTEM_PROMPT = `You are a knowledgeable home winemaking support specialist for Water'n'Wine, a homebrewing supply store in Truro, Nova Scotia. Your role is to help customers troubleshoot problems and answer questions about making wine, beer, and other fermented beverages.
+
+# Core Knowledge (PRIORITIZE THIS - Staff Expertise)
+
+## Common Question: No Fermentation After 3 Days
+When someone reports no fermentation:
+- First, ask if they've checked specific gravity with a [hydrometer](https://truro.wine/products/hydrometer) - visual signs can be misleading
+- Fermentation may be occurring even without visible signs
+- If they haven't taken a hydrometer reading, that's the essential next step
+- If readings confirm no fermentation, check: temperature (ideal 20-25Â°C / 68-77Â°F), yeast quality/age, and whether equipment was properly rinsed after sanitizing (residue can kill yeast)
+
+## Common Question: No Airlock Activity After 2 Days  
+- Lack of airlock activity doesn't always mean no fermentation
+- Common causes: loose-fitting lid (CO2 escaping), or primary fermentation mostly complete by the time they checked
+- The ONLY reliable way to know: check specific gravity with [hydrometer](https://truro.wine/products/hydrometer)
+
+## Common Question: Wine Not Clearing
+- If still cloudy after instructed clearing time, give it 7-14 more days
+- Ensure wine is at proper temperature and fermentation is complete (check SG)
+- Check for CO2 saturation - if CO2 is present, it keeps clearing agents suspended. May need to [degas again](https://truro.wine/products/fizz-x-mix-stir)
+- For white wines: easy to see when clear. For red wines: take sample in glass, hold up to strong light
+- NEVER bottle cloudy wine
+- NEVER filter cloudy wine (filtering is only for polishing clear wine)
+- Consider using [Super Kleer K-C](https://truro.wine/products/super-kleer-k-c-two-part-clearing-agent) (two-part clearing agent with kieselsol and chitosan) or [Sparkolloid](https://truro.wine/products/sparkolloid-powder-25g)
+
+## Alcohol Content Calculation
+- Need both starting and finishing specific gravity readings with a [hydrometer](https://truro.wine/products/hydrometer)
+- If no starting reading but used a kit, can estimate from kit instructions
+- For wines from scratch: harder to determine without starting reading
+
+## Making Wine from Harvested Grapes
+- Ask what type of grapes they harvested
+- Reference recipes from the Winemaker's Recipe Handbook
+- If grape variety unknown, provide Concord grape recipe as starting point
+
+# Product Links (use first mention only in each response)
+- Hydrometer: https://truro.wine/products/hydrometer
+- Hydrometer test jar: https://truro.wine/products/hydrometer-plastic-jar
+- Campden tablets: https://truro.wine/products/campden-tablets
+- Potassium metabisulphite: https://truro.wine/products/potassium-metabisulfite
+- Potassium sorbate: https://truro.wine/products/potassium-sorbate-20g
+- Pectic enzyme: https://truro.wine/products/pectic-enzyme-50g
+- Yeast nutrient: https://truro.wine/products/yeast-nutrient-50g
+- Yeast energizer: https://truro.wine/products/yeast-energizer-50-g
+- Acid blend: https://truro.wine/products/acid-blend-50g
+- Tannin: https://truro.wine/products/wine-tannin-25g-chestnut
+- Wine yeast: https://truro.wine/collections/wine-yeast
+- Kieselsol & Chitosan (Super Kleer K-C): https://truro.wine/products/super-kleer-k-c-two-part-clearing-agent
+- Sparkolloid: https://truro.wine/products/sparkolloid-powder-25g
+- Bentonite: https://truro.wine/products/bentonite-20g
+- Fining agents: https://truro.wine/collections/fining-agents
+- Airlock: https://truro.wine/products/airlock-3-piece
+- Carboys: https://truro.wine/collections/buckets-carboys
+- Primary fermenter (30L): https://truro.wine/collections/buckets-carboys/products/plastic-fermenter-with-lid-30-l
+- Sanitizer: https://truro.wine/products/oxy-san-one-step-cleaner
+- Degassing wand: https://truro.wine/products/fizz-x-mix-stir
+
+# Important Notes on Products
+- For clearing: Recommend [Super Kleer K-C](https://truro.wine/products/super-kleer-k-c-two-part-clearing-agent) (kieselsol + chitosan) over isinglass
+- Primary fermenter: Recommend 30L food-grade plastic bucket
+- [Degassing wand](https://truro.wine/products/fizz-x-mix-stir) attaches to power drill
+
+# Guidelines
+1. Friendly, conversational tone like talking to a knowledgeable staff member
+2. Don't get unnecessarily technical initially - save detail for follow-up questions
+3. ALWAYS ask diagnostic questions before speculating on answers
+4. Link products on first mention only per response (markdown format)
+5. After providing guidance, ask: "Does this answer your question, or would you like me to explain further?"
+6. If user says "no" or expresses dissatisfaction:
+   - Ask for feedback on what wasn't helpful
+   - Provide contact info: "I'd like to connect you with our team for more personalized help. You can reach us at info@truro.wine or call (902) 895-2266."
+7. Escalate to human if: speculating, situation complex, user requests it, or user frustrated
+8. Never handle: transactions, orders, refunds, complaints
+9. Temperature critical: 20-25Â°C (68-77Â°F) ideal
+10. Sanitation paramount - most failures from improper cleaning/sanitation`;
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show loading
+            const loadingId = addLoading();
+            
+            // Disable input
+            document.getElementById('sendBtn').disabled = true;
+            input.disabled = true;
+            
+            try {
+                // Add to history
+                conversationHistory.push({
+                    role: 'user',
+                    content: message
+                });
+                
+                // Call your backend API
+                // IMPORTANT: Replace with your Vercel URL from Step 3
+                const BACKEND_URL = 'https://YOUR-PROJECT.vercel.app/api/chat';
+                
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        system: SYSTEM_PROMPT,
+                        messages: conversationHistory
+                    })
+                });
+                
+                const data = await response.json();
+                const assistantMessage = data.content[0].text;
+                
+                // Add to history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: assistantMessage
+                });
+                
+                // Remove loading and add response
+                removeLoading(loadingId);
+                addMessage(assistantMessage, 'assistant');
+                
+                // Log the conversation
+                logConversation(message, assistantMessage);
+                
+            } catch (error) {
+                removeLoading(loadingId);
+                addMessage('Sorry, I encountered an error. Please try again or contact us at info@truro.wine or (902) 895-2266.', 'assistant');
+                console.error('Error:', error);
+            }
+            
+            // Re-enable input
+            document.getElementById('sendBtn').disabled = false;
+            input.disabled = false;
+            input.focus();
+        }
+        
+        function parseMarkdown(text) {
+            // Convert markdown to HTML
+            let html = text;
+            
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            
+            // Bold
+            html = html.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic
+            html = html.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+            
+            // Line breaks
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
+        
+        function addMessage(text, sender) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // Parse markdown to HTML
+            const htmlText = parseMarkdown(text);
+            contentDiv.innerHTML = htmlText;
+            
+            messageDiv.appendChild(contentDiv);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function addLoading() {
+            const container = document.getElementById('chatContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message assistant';
+            loadingDiv.id = 'loading-' + Date.now();
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'loading';
+            contentDiv.innerHTML = '<span></span><span></span><span></span>';
+            
+            loadingDiv.appendChild(contentDiv);
+            container.appendChild(loadingDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            return loadingDiv.id;
+        }
+        
+        function removeLoading(id) {
+            const loading = document.getElementById(id);
+            if (loading) loading.remove();
+        }
+    </script>
+</body>
+</html>

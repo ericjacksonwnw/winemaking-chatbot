@@ -1,0 +1,11 @@
+{
+  "name": "winemaking-chatbot",
+  "version": "1.0.0",
+  "description": "Winemaking support chatbot for Water'n'Wine",
+  "main": "api/chat.js",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
