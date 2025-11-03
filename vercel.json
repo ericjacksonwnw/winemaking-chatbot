@@ -1,3 +1,14 @@
 {
-     "version": 2
-   }
+  "version": 2,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://truro.wine https://*.truro.wine https://waternwine.com https://*.waternwine.com https://waternwine.myshopify.com"
+        }
+      ]
+    }
+  ]
+}
