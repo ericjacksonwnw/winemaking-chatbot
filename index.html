@@ -334,18 +334,24 @@ When someone reports no fermentation:
                 // IMPORTANT: Replace with your Vercel URL from Step 3
                 const BACKEND_URL = 'https://winemaking-chatbot-git-main-erics-projects-28ea525d.vercel.app/api/chat';
                 
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        system: SYSTEM_PROMPT,
-                        messages: conversationHistory
-                    })
-                });
-                
-                const data = await response.json();
+const response = await fetch(BACKEND_URL, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        system: SYSTEM_PROMPT,
+        messages: conversationHistory
+    })
+});
+
+// DEBUG: Log the response
+console.log('Response status:', response.status);
+const responseText = await response.text();
+console.log('Response text:', responseText);
+
+// Try to parse as JSON
+const data = JSON.parse(responseText);
                 const assistantMessage = data.content[0].text;
                 
                 // Add to history
