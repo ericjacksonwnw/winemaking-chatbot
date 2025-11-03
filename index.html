@@ -219,15 +219,12 @@
             // Store in browser for debugging (you can view in console)
             console.log('Conversation Log:', logEntry);
             
-            // Optional: Send to logging endpoint
-            // Uncomment and add your logging endpoint URL
-            /*
-            fetch('YOUR_LOGGING_ENDPOINT_URL', {
+            //Send to logging endpoint
+            fetch('https://script.google.com/macros/s/AKfycbzhFmuA-YgUdl5DlKyjEyMiXeUBHB5aiHCsS3O_VJcW794e5piFxlo0ZrD6BQsJlS4/exec', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(logEntry)
             }).catch(err => console.log('Logging failed:', err));
-            */
         }
         
         const SYSTEM_PROMPT = `You are a knowledgeable home winemaking support specialist for Water'n'Wine, a homebrewing supply store in Truro, Nova Scotia. Your role is to help customers troubleshoot problems and answer questions about making wine, beer, and other fermented beverages.
